@@ -13,28 +13,30 @@ import (
 )
 
 type YamlConfig struct {
-	Version      string   `yaml:"version"`
-	Toolchain    int      `yaml:"toolchain"`
-	Classpath    string   `yaml:"classpath"`
-	Repositories []string `yaml:"repositories"`
-	Dependencies []string `yaml:"dependencies"`
+	Version      string            `yaml:"version"`
+	Toolchain    int               `yaml:"toolchain"`
+	Classpath    string            `yaml:"classpath"`
+	Repositories map[string]string `yaml:"repositories"`
+	Dependencies []string          `yaml:"dependencies"`
+	Src          string            `yaml:"src"`
 }
 
 const (
 	cfgName = "module.yaml"
 )
 
-var defaultConfig = &YamlConfig{
+var DefaultConfig = &YamlConfig{
 	Version:      "1.9.22",
 	Toolchain:    21,
-	Classpath:    "./cp",
-	Repositories: []string{"maven"},
+	Classpath:    "cp/",
+	Src:          "src/",
+	Repositories: map[string]string{"maven": "https://repo.maven.apache.org/maven2"},
 }
 
 func main() {
 	loadConfig()
 
-	for _, d := range defaultConfig.Dependencies {
+	for _, d := range DefaultConfig.Dependencies {
 		if err := Download(Parse(d)); err != nil {
 			panic(err)
 		}
@@ -64,11 +66,19 @@ func loadConfig() {
 	}
 
 	if cfg.Toolchain > 0 {
-		defaultConfig.Toolchain = cfg.Toolchain
+		DefaultConfig.Toolchain = cfg.Toolchain
 	}
 
-	defaultConfig.Dependencies = append(defaultConfig.Dependencies, cfg.Dependencies...)
-	defaultConfig.Repositories = append(defaultConfig.Repositories, cfg.Repositories...)
+	if len(cfg.Src) > 0 {
+		DefaultConfig.Src = cfg.Src
+	}
+
+	DefaultConfig.Dependencies = append(DefaultConfig.Dependencies, cfg.Dependencies...)
+	for k, v := range cfg.Repositories {
+		if _, ok := DefaultConfig.Repositories[k]; !ok {
+			DefaultConfig.Repositories[k] = v
+		}
+	}
 }
 
 func Parse(s string) Dependency {
@@ -107,8 +117,8 @@ func Download(d Dependency) error {
 
 	defer res.Body.Close()
 
-	os.Mkdir(defaultConfig.Classpath, 0777)
-	p := path.Join(defaultConfig.Classpath, d.Jar())
+	os.Mkdir(DefaultConfig.Classpath, 0777)
+	p := path.Join(DefaultConfig.Classpath, d.Jar())
 	f, err := os.OpenFile(p, os.O_CREATE|os.O_RDWR, 0664)
 	if err != nil {
 		return err
@@ -122,7 +132,7 @@ func Download(d Dependency) error {
 	f.Close()
 
 	// find all direct dependencies
-	for _, dd := range GetDirectDependencies(d) {
+	for _, dd := range d.DirectDependencies() {
 		if err := Download(dd); err != nil {
 			return err
 		}

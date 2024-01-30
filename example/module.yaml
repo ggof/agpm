@@ -1,7 +1,7 @@
 ---
 
 Version: 1.9.21
-toolchain: "21"
+toolchain: 21
 dependencies:
   - pkg:maven/org.http4k/http4k-core@5.13.2.0
   - pkg:maven/org.http4k/http4k-server-helidon@5.13.2.0
