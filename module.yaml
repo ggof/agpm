@@ -1,0 +1,7 @@
+---
+Version: 1.9.22
+toolchain: 21
+dependencies:
+  - pkg:maven/org.http4k/http4k-core@5.13.2.0
+  - pkg:maven/org.http4k/http4k-server-helidon@5.13.2.0
+  - pkg:maven/io.arrow-kt/arrow-core@1.2.1
